@@ -1,0 +1,31 @@
+name: jointist
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - numpy
+  - matplotlib
+  - pandas
+  - librosa
+  - sox
+  - h5py
+  - tqdm
+  - black
+  - tabulate
+  - hydra-core
+  - pip
+  - pip:
+      - torchmetrics==0.6.2
+      - torchvision
+      - torchaudio
+      - pytorch_lightning==1.4.5
+      - torchmetrics
+      - mir_eval
+      - mido
+      - pretty_midi
+      - pyfluidsynth
+      - soundfile
+      - auditok
+      - einops
+      - git+https://github.com/KinWaiCheuk/slakh_loader
