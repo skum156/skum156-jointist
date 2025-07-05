@@ -14,16 +14,11 @@ from End2End.MIDI_program_map import (
 
 # from End2End.Data import DataModuleEnd2End, End2EndBatchDataPreprocessor, FullPreprocessor, WildDataset
 import End2End.Data as Data
-from End2End.tasks.jointist_ss import Jointist_SS
+from End2End.tasks.jointist import Jointist
 
 # packages for transcription
 from End2End.tasks.transcription import Transcription
 import End2End.models.transcription.combined as TranscriptionModel
-
-# packages for source separation
-import End2End.models.separation as SeparationModel
-from End2End.tasks.separation import Separation
-from End2End.tasks.t_separation import TSeparation
 
 # packages for detection
 import End2End.tasks.detection as Detection
@@ -39,7 +34,7 @@ from hydra.utils import to_absolute_path
 
 
 
-@hydra.main(config_path="End2End/config/", config_name="jointist_ss_inference")
+@hydra.main(config_path="End2End/config/", config_name="jointist_inference")
 def main(cfg):
     r"""Train an instrument classification system, evluate, and save checkpoints.
 
@@ -81,42 +76,20 @@ def main(cfg):
             (**cfg.datamodule.args, MIDI_MAPPING=cfg.MIDI_MAPPING)
         pred_loader = DataLoader(dataset, **cfg.datamodule.dataloader_cfg.pred)
 
-    print(f"{len(pred_loader)=}")
+
     # get checkpoint_paths
-    tseparation_ckpt = to_absolute_path(cfg.checkpoint.tseparation)            
+    ckpt_transcription = to_absolute_path(cfg.checkpoint.transcription)            
     
     # defining transcription model
     Model = getattr(TranscriptionModel, cfg.transcription.model.type)
     model = Model(cfg, **cfg.transcription.model.args)
-    transcription_model = Transcription(
-        network=model,
-        loss_function=None,
-        lr_lambda=None,
-        batch_data_preprocessor=None,
-        cfg=cfg)
+    transcription_model = Transcription.load_from_checkpoint(ckpt_transcription,
+                                                    network=model,
+                                                    loss_function=None,
+                                                    lr_lambda=None,
+                                                    batch_data_preprocessor=None,
+                                                    cfg=cfg)
     
-    
-    model = getattr(SeparationModel, cfg.separation.model.type)\
-                              (**cfg.separation.model.args, spec_cfg=cfg.separation.feature)
-    
-    separation_model = Separation(
-        network=model,
-        loss_function=None,
-        lr_lambda=None,
-        batch_data_preprocessor=None,
-        cfg=cfg
-    )            
-    
-    
-    # defining jointist
-    tseparation_model = TSeparation.load_from_checkpoint(
-        tseparation_ckpt,
-        transcription_model = transcription_model,
-        separation_model = separation_model,
-        batch_data_preprocessor = None,        
-        lr_lambda=None,
-        cfg=cfg
-    )        
 
     # defining instrument detection model
     if cfg.detection.type!='OpenMicBaseline': # only need backbone when doing transformer based models
@@ -193,9 +166,9 @@ def main(cfg):
     logger = pl.loggers.TensorBoardLogger(save_dir='.', name=experiment_name)    
     
     # defining jointist
-    jointist = Jointist_SS(
+    jointist = Jointist(
         detection_model=detection_model,
-        tseparation_model=tseparation_model,
+        transcription_model=transcription_model,
         lr_lambda=None,
         cfg=cfg        
     )    

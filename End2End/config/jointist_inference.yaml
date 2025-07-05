@@ -21,7 +21,7 @@ checkpoint:
 
 trainer:
   gpus: ${gpus}
-  accelerator: 'ddp'
+  accelerator: cpu 
   sync_batchnorm: True
   replace_sampler_ddp: False
   profiler: 'simple'

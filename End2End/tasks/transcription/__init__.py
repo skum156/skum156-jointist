@@ -1,1 +1,1 @@
-from .transcription import Transcription, BaselineTranscription
+from .transcription import Transcription
